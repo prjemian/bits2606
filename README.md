@@ -1,23 +1,27 @@
 # BITS Starter
 
-Instrument Github Repository to be used with BITS structure at the APS
-
+Bluesky BITS instrument, using 2026-06 BITS v2.0.2+.
 
 ## Installing your own BITS instrument
 
 ```bash
-export ENV_NAME=BITS_env
-conda create -y -n $ENV_NAME python=3.11
+export ENV_NAME=bits2606
+conda create -y -n $ENV_NAME python=3.14 hkl
 conda activate $ENV_NAME
 pip install apsbits
+
+# for the libhkl support library (temporary workaround)
+conda env config vars set LD_LIBRARY_PATH="${CONDA_PREFIX}/lib"
+conda deactivate
+conda activate $ENV_NAME
 ```
 
 
 ## Creating a New Instrument
 ```bash
-export YOUR_INSTRUMENT_NAME=new_instrument
+export YOUR_INSTRUMENT_NAME=bits2606
 create-bits $YOUR_INSTRUMENT_NAME
-pip install -e .
+pip install -e .[all]
 ```
 
 
@@ -26,7 +30,7 @@ pip install -e .
 To start the bluesky instrument session in a ipython execute the next command in a terminal:
 
 ```bash
-ipython
+ipython -i -c "from bits2606.startup import *"
 ```
 
 ## Jupyter Notebook Start
@@ -35,7 +39,7 @@ Start JupyterLab, a Jupyter notebook server, or a notebook, VSCode.
 ## Starting the BITS Package
 
 ```py
-from YOUR_INSTRUMENT_NAME.startup import *
+from bits2606.startup import *
 ```
 
 ## Run Sim Plan Demo
