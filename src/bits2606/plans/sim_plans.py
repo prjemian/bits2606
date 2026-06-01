@@ -15,13 +15,16 @@ import logging
 from apsbits.core.instrument_init import with_registry
 from bluesky import plan_stubs as bps
 from bluesky import plans as bp
+from bluesky.utils import plan as bluesky_plan
 
 logger = logging.getLogger(__name__)
+logger.bsdev(__file__)
 
 DEFAULT_MD = {"title": "test run with simulator(s)"}
 
 
 @with_registry
+@bluesky_plan
 def sim_count_plan(
     oregistry, num: int = 1, imax: float = 10_000, md: dict = DEFAULT_MD
 ):
@@ -33,6 +36,7 @@ def sim_count_plan(
 
 
 @with_registry
+@bluesky_plan
 def sim_print_plan(oregistry):
     """Demonstrate a ``print()`` plan stub (no data streams)."""
     logger.debug("sim_print_plan()")
@@ -44,6 +48,7 @@ def sim_print_plan(oregistry):
 
 
 @with_registry
+@bluesky_plan
 def sim_rel_scan_plan(
     oregistry,
     span: float = 5,

@@ -4,46 +4,85 @@ apsbits.utils.sim_creator.predefined_device:
 - { creator: ophyd.sim.motor, name: sim_motor }
 - { creator: ophyd.sim.noisy_det, name: sim_det }
 
-## THIS ARE EXAMPLES OF OTHER DEVICES THAT YOU CAN USE
-# ophyd.Signal:
-# - name: test
-#   value: 50.7
-# - name: t2
-#   value: 2
+apstools.synApps.Optics2Slit2D_HV:
+- name: slit1
+  prefix: gp:Slit1
+  labels: [ "slits", "baseline" ]
 
-# apstools.synApps.Optics2Slit2D_HV:
-# - name: slit1
-#   prefix: ioc:Slit1
-#   labels: ["slits", "baseline"]
+apstools.synApps.SscanDevice: [ { name: scans, prefix: "gp:" } ]
+# apstools.synApps.UserCalcoutDevice: [{ name: user_calcouts, prefix: "gp:" }]
+apstools.synApps.UserCalcsDevice: [ { name: user_calcs, prefix: "gp:" } ]
+# apstools.synApps.UserStringSequenceDevice: [{ name: user_sseqs, prefix: "gp:" }]
+apstools.synApps.UserTransformsDevice: [ { name: user_transforms, prefix: "gp:" } ]
 
-# hkl.SimulatedE4CV:
-# - name: sim4c
-#   prefix: ""
-#   labels: ["diffractometer"]
+apstools.devices.ad_creator:
+  - name: adsimdet
+    prefix: "ad:"
+    labels: ["area_detector", "detectors"]
+    plugins:
+      - cam:
+          class: apstools.devices.SimDetectorCam_V34
+      - image
+      - pva
+      - hdf1:
+          class: apstools.devices.AD_EpicsFileNameHDF5Plugin
+          read_path_template: "/tmp/docker_ioc/iocad/tmp/"
+          write_path_template: "/tmp/"
+      - roi1
+      - stats1
 
-# ophyd.scaler.ScalerCH:
-# - name: scaler1
-#   prefix: vme:scaler1
-#   labels: ["scalers", "detectors"]
+apstools.devices.SimulatedApsPssShutterWithStatus:
+- name: shutter
+  labels: [ "shutters", baseline ]
+
+apstools.synApps.TransformRecord:
+  - name: ad_transform
+    prefix: "gp:userTran19"
+
+bits2606.devices.factories.motors:
+- { prefix: "gp:m", first: 1, last: 4, labels: [ "motor" ] }
+# gp:m5 & gp:m6 reserved by gp:Slit1
+- { prefix: "gp:m", first: 7, last: 22, labels: [ "motor" ] }
+# gp:m23 .. gp:m28 used by psic
+# gp:m29 .. gp:m32 used by fourc
+- { prefix: "gp:m", first: 33, last: 44, labels: [ "motor" ] }
+# gp:m45 .. gp:m47 used by monochromator
+- { prefix: "gp:m", first: 48, last: 56, labels: [ "motor" ] }
+
+bits2606.devices.ioc_stats.IocInfoDevice: [ { name: gp_stats, prefix: "gp:" } ]
+
+bits2606.devices.kohzu_monochromator.KohzuDCM:
+- name: dcm
+  prefix: "gp:"
+  labels: [ "monochromator", baseline ]
+  m_th: m45
+  m_y: m46
+  m_z: m47
+
+bits2606.devices.scaler.ScalerCH:
+- name: scaler1
+  prefix: gp:scaler1
+  labels: [ "scalers", "detectors" ]
+
+bits2606.devices.temperature_signal.TemperaturePositioner:
+- name: temperature
+  prefix: gp:userCalc8
+  egu: C
+  limits: [ -20, 255 ]
+  labels: [ "monitor" ]
 
 # ophyd.EpicsMotor:
-# - {name: m1, prefix: gp:m1, labels: ["motor"]}
-# - {name: m2, prefix: gp:m2, labels: ["motor"]}
-# - {name: m3, prefix: gp:m3, labels: ["motor"]}
-# - {name: m4, prefix: gp:m4, labels: ["motor"]}
+# - {name: m1, prefix: "gp:m1", labels: ["motor"]}
+# - {name: m2, prefix: "gp:m2", labels: ["motor"]}
+# - {name: m3, prefix: "gp:m3", labels: ["motor"]}
+# - {name: m4, prefix: "gp:m4", labels: ["motor"]}
 
-# apstools.devices.ad_creator:
-#   - name: adsimdet
-#     prefix: "ad:"
-#     labels: ["area_detector", "detectors"]
-#     plugins:
-#       - cam:
-#           class: apstools.devices.SimDetectorCam_V34
-#       - image
-#       - pva
-#       - hdf1:
-#           class: apstools.devices.AD_EpicsFileNameHDF5Plugin
-#           read_path_template: "/path/to/bluesky/tmp/"
-#           write_path_template: "/path/to/ioc/tmp/"
-#       - roi1
-#       - stats1
+ophyd.EpicsSignal:
+- name: scan_id_epics
+  read_pv: gp:gp:int20
+  labels: [ "scan_id" ]
+
+ophyd.EpicsSignalRO:
+- name: noisy
+  read_pv: gp:userCalc1
+  labels: [ "detectors", "simulator" ]

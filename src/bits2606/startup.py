@@ -93,6 +93,8 @@ if running_in_queueserver():
     ### plan by plan.
     from apstools.plans import lineup2  # noqa: F401
     from bluesky.plans import *  # noqa: F403
+
+    logger.info("Queueserver session")
 else:
     # Import bluesky plans and stubs with prefixes set by common conventions.
     # The apstools plans and utils are imported by '*'.
@@ -100,6 +102,7 @@ else:
     from apstools.utils import *  # noqa: F403
     from bluesky import plan_stubs as bps  # noqa: F401
     from bluesky import plans as bp  # noqa: F401
+
 
 # Experiment specific logic, device and plan loading. # Create the devices.
 make_devices(clear=False, file="devices.yml", device_manager=instrument)
@@ -111,6 +114,24 @@ if host_on_aps_subnet():
 # Devices with the label 'baseline' will be added to the baseline stream.
 setup_baseline_stream(sd, oregistry, connect=False)
 
+from .plans.nxm_acquire import nxm_rel_scan  # noqa: E402, F401
 from .plans.sim_plans import sim_count_plan  # noqa: E402, F401
 from .plans.sim_plans import sim_print_plan  # noqa: E402, F401
 from .plans.sim_plans import sim_rel_scan_plan  # noqa: E402, F401
+
+# ---------------------------
+# --------------------------- local changes
+# ---------------------------
+
+# adjust the scan_id to the current catalog
+oregistry["scan_id_epics"].put(len(cat))
+
+
+def on_startup():
+    """Custom session initialization."""
+    from bits2606.plans.gp_device_setup import gp_controls_setup
+
+    yield from gp_controls_setup()
+
+
+RE(on_startup())
