@@ -65,7 +65,7 @@ def change_motor_srev(srev=2_000):
     """
     logger.info("change_motor_srev()")
 
-    for motor in oregistry.findall(label="motor"):
+    for motor in oregistry.findall(label="motors"):
         if "steps_per_revolution" in dir(motor):
             motor.wait_for_connection()
             logger.debug("Set %r SREV to %f steps/rev", motor.name, srev)
