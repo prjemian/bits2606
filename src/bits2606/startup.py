@@ -105,6 +105,31 @@ else:
 
 
 # Experiment specific logic, device and plan loading. # Create the devices.
+#
+# Workaround for apsbits >=2.0.3: apsbits.core.instrument_init.make_devices
+# calls `asyncio.run(...)` unconditionally, which raises
+# `RuntimeError: asyncio.run() cannot be called from a running event loop`
+# when startup is imported from a Jupyter/ipykernel session (Tornado already
+# owns a running loop).  Plain `ipython` has no running loop, so it works.
+# Detect a running loop and, only in that case, apply `nest_asyncio` so the
+# nested `asyncio.run(...)` inside apsbits becomes re-entrant.
+# Track upstream fix in apsbits before removing this block.
+import asyncio as _asyncio  # noqa: E402
+
+try:
+    _asyncio.get_running_loop()
+except RuntimeError:
+    pass  # no running loop (terminal ipython, scripts): leave asyncio alone
+else:
+    import nest_asyncio  # noqa: E402
+
+    nest_asyncio.apply()
+    logger.info(
+        "Applied nest_asyncio.apply() to allow apsbits.make_devices() "
+        "to call asyncio.run() inside a running event loop "
+        "(Jupyter/ipykernel/queueserver)."
+    )
+
 make_devices(clear=False, file="devices.yml", device_manager=instrument)
 
 if host_on_aps_subnet():
@@ -124,7 +149,7 @@ from .plans.sim_plans import sim_rel_scan_plan  # noqa: E402, F401
 # ---------------------------
 
 # adjust the scan_id to the current catalog
-oregistry["scan_id_epics"].put(len(cat))
+# oregistry["scan_id_epics"].put(len(cat))
 
 
 def on_startup():
