@@ -4,5 +4,5 @@
 
 apstools.devices.ApsMachineParametersDevice:
 - name: aps
-  labels:
-  - baseline
+  #labels:
+  #- baseline
