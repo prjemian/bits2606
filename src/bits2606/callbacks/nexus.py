@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def nxwriter_init(RE: Any, iconfig: dict[str, Any]) -> Any:
     """Initialize the Nexus data file writer callback."""
-    from apstools.utils import host_on_aps_subnet
+    from apsbits.utils.aps_functions import host_on_aps_subnet
 
     if host_on_aps_subnet():
         from apstools.callbacks import NXWriterAPS as NXWriter
@@ -44,7 +44,7 @@ def nxwriter_init(RE: Any, iconfig: dict[str, Any]) -> Any:
         "FILE_EXTENSION", "hdf"
     )
 
-    print(nxwriter.file_extension)
+    # print(nxwriter.file_extension)
     warn_missing = iconfig.get("NEXUS_DATA_FILES", {}).get("WARN_MISSING", False)
     nxwriter.warn_on_missing_content = warn_missing
 
