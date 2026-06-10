@@ -73,16 +73,16 @@ RE, sd = init_RE(iconfig, subscribers=[bec, cat])
 # Optional Nexus callback block
 # delete this block if not using Nexus
 if iconfig.get("NEXUS_DATA_FILES", {}).get("ENABLE", False):
-    from .callbacks.demo_nexus_callback import nxwriter_init
+    from .callbacks.nexus import nxwriter_init
 
     nxwriter = nxwriter_init(RE, iconfig)
 
 # Optional SPEC callback block
 # delete this block if not using SPEC
 if iconfig.get("SPEC_DATA_FILES", {}).get("ENABLE", False):
-    from .callbacks.demo_spec_callback import init_specwriter_with_RE
-    from .callbacks.demo_spec_callback import newSpecFile  # noqa: F401
-    from .callbacks.demo_spec_callback import spec_comment  # noqa: F401
+    from .callbacks.spec import init_specwriter_with_RE
+    from .callbacks.spec import newSpecFile  # noqa: F401
+    from .callbacks.spec import spec_comment  # noqa: F401
 
     specwriter = init_specwriter_with_RE(RE, iconfig)  # noqa: F811
 
