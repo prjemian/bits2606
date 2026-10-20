@@ -26,7 +26,7 @@ apstools.devices.ad_creator:
       - pva
       - hdf1:
           class: apstools.devices.AD_EpicsFileNameHDF5Plugin
-          read_path_template: "/tmp/docker_ioc/iocad/tmp/"
+          read_path_template: "/local/ioc/iocad/tmp/"
           write_path_template: "/tmp/"
       - roi1
       - stats1
@@ -38,6 +38,24 @@ apstools.devices.SimulatedApsPssShutterWithStatus:
 apstools.synApps.TransformRecord:
   - name: ad_transform
     prefix: "gp:userTran19"
+
+bits2606.devices.area_detector_factory.ad_creator_async:
+  - name: adsimoa
+    prefix: "ad:"
+    # labels: ["area_detector", "detectors"]
+    plugin_list: ["image", "pva", "roi1", "stats1"]
+    writer_specs:
+      hdf:
+        args:
+          - type: ophyd_async.core:StaticPathProvider
+            args:
+              - type: ophyd_async.core:StaticFilenameProvider
+                args: ["adsim_test"]
+            kwargs:
+              directory_path: "/tmp/learning/"
+              directory_uri: "file://localhost/local/ioc/iocad/tmp/learning/"
+              create_dir_depth: -5
+
 
 bits2606.devices.factories.motors:
 - { prefix: "gp:m", first: 1, last: 4, labels: [ "motor" ] }
