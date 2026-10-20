@@ -149,7 +149,8 @@ from .plans.sim_plans import sim_rel_scan_plan  # noqa: E402, F401
 # ---------------------------
 
 # adjust the scan_id to the current catalog
-# oregistry["scan_id_epics"].put(len(cat))
+oregistry["scan_id_epics"].put(len(cat))
+# RE.md["scan_id"] = len(cat)
 
 
 def on_startup():
