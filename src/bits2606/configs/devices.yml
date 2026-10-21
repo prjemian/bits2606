@@ -47,14 +47,22 @@ bits2606.devices.area_detector_factories.ad_creator_async:
     writer_specs:
       hdf:
         args:
-          - type: ophyd_async.core:StaticPathProvider
-            args:
-              - type: ophyd_async.core:StaticFilenameProvider
-                args: ["adsim_test"]
+          - type: bits2606.devices.area_detector_providers.ADPathProvider
+            # TODO: use the existing value of the PV, as ADFilenameProvider
             kwargs:
+              filename_provider:
+                type: bits2606.devices.area_detector_providers.ADFilenameProvider
+                kwargs:
+                  # TODO: Use this filename if PV is empty on init.
+                  filename: adsimoa
               directory_path: "/tmp/learning/"
+              # Use this directory_path if PV is empty on connect, raise if empty on use
               directory_uri: "file://localhost/local/ioc/iocad/tmp/learning/"
               create_dir_depth: -5
+        kwargs:
+          file_template: "%s%s_%3.3d.h5"
+          # TODO: use the existing value of the PV, as ADFilenameProvider
+          #   Use this file_template if PV is empty on connect, raise if empty on use
 
 
 bits2606.devices.factories.motors:

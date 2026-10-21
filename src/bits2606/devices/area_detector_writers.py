@@ -43,6 +43,9 @@ class ConfigurableHDFDataLogic(ADHDFDataLogic):
     file_template: str = "%s%s.h5"
 
     async def prepare_unbounded(self, datakey_name: str) -> StreamableDataProvider:
+        update = getattr(self.path_provider, "update", None)
+        if update is not None:
+            await update()
         path_info = self.path_provider(datakey_name)
         frames_per_chunk = await self.writer.num_frames_chunks.get_value()
         if frames_per_chunk == 0:
@@ -107,6 +110,9 @@ class ConfigurableMultipartDataLogic(ADMultipartDataLogic):
     file_template: str | None = None
 
     async def prepare_unbounded(self, datakey_name: str) -> StreamableDataProvider:
+        update = getattr(self.path_provider, "update", None)
+        if update is not None:
+            await update()
         path_info = self.path_provider(datakey_name)
         file_template = self.file_template or ("%s%s_%6.6d" + self.extension)
         await prepare_file_paths(
@@ -145,6 +151,9 @@ class ConfigurableWriterFactory:
 
     def __call__(self, prefix: str, driver, plugins: Sequence[NDPluginBaseIO]):
         writer = self.writer_cls(prefix + self.writer_suffix)
+        bind_writer = getattr(self.path_provider, "bind_writer", None)
+        if bind_writer is not None:
+            bind_writer(writer)
         if callable(self.array_description):
             array_description = self.array_description(driver)
         elif self.array_description is not None:
