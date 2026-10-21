@@ -37,8 +37,10 @@ class ADFilenameProvider(FilenameProvider):
         """Read and cache the current filename from the writer."""
         if self.writer is None:
             raise RuntimeError("Bind a writer before updating the filename")
-        self.filename = await self.writer.file_name.get_value(cached=False)
-        if not self.filename:
+        filename = await self.writer.file_name.get_value(cached=False)
+        if filename:
+            self.filename = filename
+        elif not self.filename:
             logger.warning("AreaDetector FileName PV is empty")
             raise ValueError("AreaDetector FileName PV is empty")
         return self.filename
@@ -58,11 +60,13 @@ class ADPathProvider(PathProvider):
     create_dir_depth: int = 0
     filename_provider: ADFilenameProvider | None = None
     directory_path: PurePath | None = None
+    configured_directory_path: PurePath | None = None
 
     def __post_init__(self) -> None:
         """Runs after the constructor..."""
         if self.filename_provider is None:
             self.filename_provider = ADFilenameProvider()
+        self.configured_directory_path = self.directory_path
         if self.writer is not None:
             self.bind_writer(self.writer)
 
@@ -76,7 +80,10 @@ class ADPathProvider(PathProvider):
         if self.writer is None:
             raise RuntimeError("Bind a writer before updating the path")
         directory_path = await self.writer.file_path.get_value(cached=False)
-        self.directory_path = PurePath(directory_path)
+        if directory_path:
+            self.directory_path = PurePath(directory_path)
+        elif self.directory_path is None:
+            raise ValueError("AreaDetector FilePath PV is empty")
         await self.filename_provider.update()
         return self()
 

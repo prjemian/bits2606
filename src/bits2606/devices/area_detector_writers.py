@@ -8,6 +8,11 @@ upstream HDF5, JPEG, and TIFF behavior.
 import asyncio
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import PurePath, PureWindowsPath
+from urllib.parse import quote
+from urllib.parse import urlsplit
+from urllib.parse import urlunsplit
 
 from ophyd_async.core import (
     DetectorDataLogic,
@@ -20,12 +25,12 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics import adcore
 from ophyd_async.epics.adcore._data_logic import (
+    ADFileWriteMode,
     ADHDFDataLogic,
     ADMultipartDataLogic,
     NDArrayDescription,
     get_ndarray_resource_info,
     get_ndattribute_dtype_source,
-    prepare_file_paths,
 )
 from ophyd_async.epics.adcore._io import (
     NDArrayBaseIO,
@@ -34,6 +39,65 @@ from ophyd_async.epics.adcore._io import (
     NDPluginFileIO,
 )
 from ophyd_async.epics.core import stop_busy_record
+
+
+def substitute_area_detector_date_tokens(path: str, now: datetime | None = None) -> str:
+    """Replace unresolved AreaDetector date tokens in a path."""
+    if not any(token in path for token in ("%Y", "%m", "%D")):
+        return path
+    now = now or datetime.now()
+    replacements = {
+        "%Y": now.strftime("%Y"),
+        "%m": now.strftime("%m"),
+        "%D": now.strftime("%d"),
+    }
+    for token, value in replacements.items():
+        path = path.replace(token, value)
+    return path
+
+
+def reroot_path_uri(ioc_path: str, ioc_root: str, client_uri: str) -> str:
+    """Map an IOC path below its root into the client-visible URI root."""
+    ioc_path = PurePath(ioc_path)
+    ioc_root = PurePath(ioc_root)
+    try:
+        relative_path = ioc_path.relative_to(ioc_root)
+    except ValueError as exc:
+        raise ValueError(f"IOC path {ioc_path!s} is not below root {ioc_root!s}") from exc
+
+    parsed = urlsplit(client_uri)
+    if not parsed.scheme or not parsed.netloc:
+        raise ValueError(f"Client URI must have a scheme and host: {client_uri!r}")
+    root_path = parsed.path.rstrip("/")
+    relative_uri = "" if relative_path == PurePath(".") else quote(
+        relative_path.as_posix(), safe="/"
+    )
+    mapped_path = f"{root_path}/{relative_uri}" if relative_uri else f"{root_path}/"
+    if not mapped_path.endswith("/"):
+        mapped_path += "/"
+    return urlunsplit((parsed.scheme, parsed.netloc, mapped_path, parsed.query, parsed.fragment))
+
+
+async def prepare_file_paths(
+    path_info, file_template: str, writer: NDPluginFileIO
+) -> None:
+    """Configure writer paths without changing the user-controlled number."""
+    await writer.create_directory.set(path_info.create_dir_depth)
+    if isinstance(path_info.directory_path, PureWindowsPath):
+        directory_path = f"{path_info.directory_path}\\"
+    else:
+        directory_path = f"{path_info.directory_path}/"
+    await asyncio.gather(
+        writer.file_path.set(directory_path),
+        writer.file_name.set(path_info.filename),
+        writer.file_template.set(file_template),
+        writer.auto_increment.set(True),
+        writer.file_write_mode.set(ADFileWriteMode.STREAM),
+    )
+    if not await writer.file_path_exists.get_value():
+        msg = f"Path {directory_path} doesn't exist or not writable!"
+        raise FileNotFoundError(msg)
+    await writer.num_capture.set(0)
 
 
 @dataclass
@@ -52,6 +116,12 @@ class ConfigurableHDFDataLogic(ADHDFDataLogic):
             frames_per_chunk = 1
             await self.writer.num_frames_chunks.set(frames_per_chunk)
 
+        file_template = await self.writer.file_template.get_value(cached=False)
+        if not file_template:
+            file_template = self.file_template
+        if not file_template:
+            raise ValueError("AreaDetector FileTemplate PV is empty")
+
         await asyncio.gather(
             self.writer.chunk_size_auto.set(True),
             self.writer.num_extra_dims.set(0),
@@ -61,7 +131,7 @@ class ConfigurableHDFDataLogic(ADHDFDataLogic):
             self.writer.enable_callbacks.set(EnableDisable.ENABLE),
             prepare_file_paths(
                 path_info=path_info,
-                file_template=self.file_template,
+                file_template=file_template,
                 writer=self.writer,
             ),
         )
@@ -94,8 +164,32 @@ class ConfigurableHDFDataLogic(ADHDFDataLogic):
             )
             for name, (dtype_numpy, source) in ndattribute_dtype_sources.items()
         ]
+        file_path = str(path_info.directory_path)
+        file_name = path_info.filename
+        file_number = await self.writer.file_number.get_value(cached=False)
+        now = datetime.now()
+        file_path = substitute_area_detector_date_tokens(file_path, now)
+        file_name = substitute_area_detector_date_tokens(file_name, now)
+        if not file_path or not file_name:
+            raise ValueError("AreaDetector FilePath_RBV and FileName_RBV must be populated")
+        configured_directory = substitute_area_detector_date_tokens(
+            str(
+                getattr(self.path_provider, "configured_directory_path", None)
+                or path_info.directory_path
+            ),
+            now,
+        )
+        file_path_uri = reroot_path_uri(
+            file_path,
+            configured_directory,
+            path_info.directory_uri,
+        )
+        try:
+            resource_uri = file_template % (file_path_uri, file_name, file_number)
+        except TypeError:
+            resource_uri = file_template % (file_path_uri, file_name)
         return StreamResourceDataProvider(
-            uri=f"{path_info.directory_uri}{path_info.filename}.h5",
+            uri=resource_uri,
             resources=[main_dataset] + ndattribute_datasets,
             mimetype="application/x-hdf5",
             collections_written_signal=self.writer.num_captured,
@@ -161,7 +255,7 @@ class ConfigurableWriterFactory:
         else:
             array_description = NDArrayDescription(
                 shape_signals=[
-                    # driver.array_size_z,  # TODO: use logic to include?
+                    # driver.array_size_z,  # Adds an extra dimension to the stream resource
                     driver.array_size_y,
                     driver.array_size_x,
                 ],
