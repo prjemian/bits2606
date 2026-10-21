@@ -63,6 +63,7 @@ bits2606.devices.area_detector_factories.ad_creator_async:
           file_template: "%s%s_%3.3d.h5"
           # TODO: use the existing value of the PV, as ADFilenameProvider
           #   Use this file_template if PV is empty on connect, raise if empty on use
+          # TODO: do not automatically reset FileNumber to zero (let user control it)
 
 
 bits2606.devices.factories.motors:
