@@ -47,15 +47,6 @@ bits2606.devices.area_detector_factories.ad_creator_async:
     writer_specs:
       hdf:
         args:
-          # Alternative static path provider configuration:
-          # - type: ophyd_async.core:StaticPathProvider
-          #   args:
-          #     - type: ophyd_async.core:StaticFilenameProvider
-          #       args: ["adsim_test"]
-          #   kwargs:
-          #     directory_path: "/tmp/learning/"
-          #     directory_uri: "file://localhost/local/ioc/iocad/tmp/learning/"
-          #     create_dir_depth: -5
           - type: bits2606.devices.area_detector_providers.ADPathProvider
             kwargs:
               filename_provider:
@@ -67,6 +58,16 @@ bits2606.devices.area_detector_factories.ad_creator_async:
               create_dir_depth: -5
         kwargs:
           file_template: "%s%s_%3.3d.h5"
+
+          # Alternative static path provider configuration:
+          # - type: ophyd_async.core:StaticPathProvider
+          #   args:
+          #     - type: ophyd_async.core:StaticFilenameProvider
+          #       args: ["adsim_test"]
+          #   kwargs:
+          #     directory_path: "/tmp/learning/"
+          #     directory_uri: "file://localhost/local/ioc/iocad/tmp/learning/"
+          #     create_dir_depth: -5
 
 
 bits2606.devices.factories.motors:

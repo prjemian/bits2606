@@ -6,39 +6,31 @@ upstream HDF5, JPEG, and TIFF behavior.
 """
 
 import asyncio
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import PurePath, PureWindowsPath
+from pathlib import PurePath
+from pathlib import PureWindowsPath
 from urllib.parse import quote
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
-from ophyd_async.core import (
-    DetectorDataLogic,
-    EnableDisable,
-    PathProvider,
-    StreamableDataProvider,
-    StreamResourceDataProvider,
-    StreamResourceInfo,
-    set_and_wait_for_value,
-)
-from ophyd_async.epics import adcore
-from ophyd_async.epics.adcore._data_logic import (
-    ADFileWriteMode,
-    ADHDFDataLogic,
-    ADMultipartDataLogic,
-    NDArrayDescription,
-    get_ndarray_resource_info,
-    get_ndattribute_dtype_source,
-)
-from ophyd_async.epics.adcore._io import (
-    NDArrayBaseIO,
-    NDFileHDF5IO,
-    NDPluginBaseIO,
-    NDPluginFileIO,
-)
-from ophyd_async.epics.core import stop_busy_record
+from ophyd_async.core import EnableDisable
+from ophyd_async.core import PathProvider
+from ophyd_async.core import StreamableDataProvider
+from ophyd_async.core import StreamResourceDataProvider
+from ophyd_async.core import StreamResourceInfo
+from ophyd_async.core import set_and_wait_for_value
+from ophyd_async.epics.adcore._data_logic import ADFileWriteMode
+from ophyd_async.epics.adcore._data_logic import ADHDFDataLogic
+from ophyd_async.epics.adcore._data_logic import ADMultipartDataLogic
+from ophyd_async.epics.adcore._data_logic import NDArrayDescription
+from ophyd_async.epics.adcore._data_logic import get_ndarray_resource_info
+from ophyd_async.epics.adcore._data_logic import get_ndattribute_dtype_source
+from ophyd_async.epics.adcore._io import NDFileHDF5IO
+from ophyd_async.epics.adcore._io import NDPluginBaseIO
+from ophyd_async.epics.adcore._io import NDPluginFileIO
 
 
 def substitute_area_detector_date_tokens(path: str, now: datetime | None = None) -> str:
@@ -63,19 +55,25 @@ def reroot_path_uri(ioc_path: str, ioc_root: str, client_uri: str) -> str:
     try:
         relative_path = ioc_path.relative_to(ioc_root)
     except ValueError as exc:
-        raise ValueError(f"IOC path {ioc_path!s} is not below root {ioc_root!s}") from exc
+        raise ValueError(
+            f"IOC path {ioc_path!s} is not below root {ioc_root!s}"
+        ) from exc
 
     parsed = urlsplit(client_uri)
     if not parsed.scheme or not parsed.netloc:
         raise ValueError(f"Client URI must have a scheme and host: {client_uri!r}")
     root_path = parsed.path.rstrip("/")
-    relative_uri = "" if relative_path == PurePath(".") else quote(
-        relative_path.as_posix(), safe="/"
+    relative_uri = (
+        ""
+        if relative_path == PurePath(".")
+        else quote(relative_path.as_posix(), safe="/")
     )
     mapped_path = f"{root_path}/{relative_uri}" if relative_uri else f"{root_path}/"
     if not mapped_path.endswith("/"):
         mapped_path += "/"
-    return urlunsplit((parsed.scheme, parsed.netloc, mapped_path, parsed.query, parsed.fragment))
+    return urlunsplit(
+        (parsed.scheme, parsed.netloc, mapped_path, parsed.query, parsed.fragment)
+    )
 
 
 async def prepare_file_paths(
@@ -107,6 +105,7 @@ class ConfigurableHDFDataLogic(ADHDFDataLogic):
     file_template: str = "%s%s.h5"
 
     async def prepare_unbounded(self, datakey_name: str) -> StreamableDataProvider:
+        """Prepare the HDF5 writer and return its stream provider."""
         update = getattr(self.path_provider, "update", None)
         if update is not None:
             await update()
@@ -171,7 +170,9 @@ class ConfigurableHDFDataLogic(ADHDFDataLogic):
         file_path = substitute_area_detector_date_tokens(file_path, now)
         file_name = substitute_area_detector_date_tokens(file_name, now)
         if not file_path or not file_name:
-            raise ValueError("AreaDetector FilePath_RBV and FileName_RBV must be populated")
+            raise ValueError(
+                "AreaDetector FilePath_RBV and FileName_RBV must be populated"
+            )
         configured_directory = substitute_area_detector_date_tokens(
             str(
                 getattr(self.path_provider, "configured_directory_path", None)
@@ -204,6 +205,7 @@ class ConfigurableMultipartDataLogic(ADMultipartDataLogic):
     file_template: str | None = None
 
     async def prepare_unbounded(self, datakey_name: str) -> StreamableDataProvider:
+        """Prepare the multipart writer and return its stream provider."""
         update = getattr(self.path_provider, "update", None)
         if update is not None:
             await update()
@@ -244,6 +246,7 @@ class ConfigurableWriterFactory:
     data_logic_factory: Callable | None = None
 
     def __call__(self, prefix: str, driver, plugins: Sequence[NDPluginBaseIO]):
+        """Create the writer and its data logic."""
         writer = self.writer_cls(prefix + self.writer_suffix)
         bind_writer = getattr(self.path_provider, "bind_writer", None)
         if bind_writer is not None:
@@ -255,7 +258,8 @@ class ConfigurableWriterFactory:
         else:
             array_description = NDArrayDescription(
                 shape_signals=[
-                    # driver.array_size_z,  # Adds an extra dimension to the stream resource
+                    # driver.array_size_z,  # Adds an extra dimension to
+                    # the stream resource
                     driver.array_size_y,
                     driver.array_size_x,
                 ],

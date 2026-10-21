@@ -7,14 +7,16 @@ from typing import Annotated as A
 from typing import TypedDict
 
 from apstools.utils import dynamic_import
-from .area_detector_writers import hdf as configurable_hdf
-from .area_detector_writers import jpeg as configurable_jpeg
-from .area_detector_writers import tiff as configurable_tiff
 from ophyd_async import core
-from ophyd_async.core import SignalR, SignalRW
+from ophyd_async.core import SignalR
+from ophyd_async.core import SignalRW
 from ophyd_async.epics import adcore
 from ophyd_async.epics import adsimdetector
 from ophyd_async.epics.core import PvSuffix
+
+from .area_detector_writers import hdf as configurable_hdf
+from .area_detector_writers import jpeg as configurable_jpeg
+from .area_detector_writers import tiff as configurable_tiff
 
 try:
     from ophyd_async.epics.adcore._io import NDProcessIO
@@ -98,6 +100,8 @@ class NDTransformIO(adcore.NDPluginBaseIO):
 
 
 class PluginSpec(TypedDict):
+    """Declarative configuration for an AreaDetector plugin."""
+
     suffix: str
     type: str | type | None
 
@@ -463,9 +467,8 @@ def ad_creator_async(
         driver,
         prefix,
         *writers,
-         trigger_logic=trigger_logic,
-         acquire_logic=acquire_logic,
-
+        trigger_logic=trigger_logic,
+        acquire_logic=acquire_logic,
         plugins=plugins,
         config_sigs=config_sigs,
         name=name,
