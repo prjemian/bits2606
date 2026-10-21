@@ -39,7 +39,7 @@ apstools.synApps.TransformRecord:
   - name: ad_transform
     prefix: "gp:userTran19"
 
-bits2606.devices.area_detector_factory.ad_creator_async:
+bits2606.devices.area_detector_factories.ad_creator_async:
   - name: adsimoa
     prefix: "ad:"
     # labels: ["area_detector", "detectors"]
