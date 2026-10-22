@@ -393,6 +393,7 @@ def ad_creator_async(
     trigger_logic: core.DetectorTriggerLogic | None = None,
     plugin_list: Sequence[str | dict[str, dict]] | None = None,
     writer_specs: dict[str, dict] | None = None,
+    labels: set[str] = None,
 ) -> adcore.AreaDetector:
     """Create an ophyd-async area detector object.
 
@@ -419,6 +420,8 @@ def ad_creator_async(
         Plugin names or override dictionaries.
     writer_specs:
         Named writer configurations.
+    labels:
+        Ophyd-style device labels.
 
     Examples
     --------
@@ -473,4 +476,6 @@ def ad_creator_async(
         config_sigs=config_sigs,
         name=name,
     )
+    if labels is not None:
+        det._ophyd_labels_ = set(labels)
     return det

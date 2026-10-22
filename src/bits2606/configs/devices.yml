@@ -42,7 +42,7 @@ apstools.synApps.TransformRecord:
 bits2606.devices.area_detector_factories.ad_creator_async:
   - name: adsimoa
     prefix: "ad:"
-    # labels: ["area_detector", "detectors"]
+    labels: ["area_detector", "detectors"]
     plugin_list: ["image", "pva", "roi1", "stats1"]
     writer_specs:
       hdf:
