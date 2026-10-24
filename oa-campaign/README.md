@@ -1,7 +1,11 @@
 # Ophyd-Async Area Detector Campaign
 
 This directory is a working area for creating ophyd-async versions of the
-area-detector examples from the apstools documentation.
+area-detector examples from the apstools documentation. The campaign
+emphasizes how to configure different detector drivers, plugins, writers,
+paths, filenames, and triggering modes. A simple shared factory supplies the
+common construction mechanism; it is an implementation detail of the demos,
+not the subject of the campaign.
 
 The directory name intentionally contains a hyphen. Its contents are demos,
 experiments, and supporting modules for this campaign; they are not a Python
@@ -47,16 +51,18 @@ Upstream `ophyd-async` currently provides useful building blocks including:
 - `ophyd_async.epics.adcore.ADTIFFWriter`
 - Area Detector path and filename providers from `ophyd_async.core`
 
-The local area-detector factory and writer modules may be used when they
-provide capabilities needed by a demo, such as configurable file templates
-or IOC-to-client path mapping. Production device code should remain outside
-this campaign directory unless a separate change explicitly promotes support.
+The shared area-detector factory and local writer modules may be used as
+implementation details when they provide capabilities needed by a demo, such
+as configurable file templates or IOC-to-client path mapping. Example
+narratives should focus on detector configuration and observed behavior, not
+on the factory internals. Production device code should remain outside this
+campaign directory unless a separate change explicitly promotes support.
 
 ## Checklist
 
 - [x] Create the campaign directory and this README.
-- [ ] Implement `de_0_adsim_hdf5_basic` with upstream ADSim and HDF5 support.
-- [ ] Verify basic acquisition, HDF5 resources, and image readback.
+- [x] Implement `de_0_adsim_hdf5_basic` with upstream ADSim and HDF5 support.
+- [x] Verify basic acquisition, HDF5 resources, and image readback.
 - [ ] Implement `de_1_adsim_hdf5_custom_names`.
 - [ ] Verify caller-controlled filenames and file-template behavior.
 - [ ] Implement `de_2_adsim_hdf5_single_mode`.
